@@ -123,6 +123,13 @@ exports.getPosts = async (req, res) => {
 // Create a new Post
 exports.createPost = async (req, res) => {
   try {
+    // Role Authorization: Only Creators can publish posts
+    if (req.user && req.user.role === 'consumer') {
+      return res.status(403).json({
+        message: 'Only Creator accounts are authorized to publish posts. Upgrade to a Creator account in your profile to share photos and videos!',
+      });
+    }
+
     const { caption, tags } = req.body;
     if (!req.file) {
       return res.status(400).json({ message: 'Media file (image or video) is required' });
@@ -282,6 +289,69 @@ exports.deletePost = async (req, res) => {
       }
       mockPosts.splice(index, 1);
       return res.json({ message: 'Post deleted successfully' });
+    }
+
+    res.status(404).json({ message: 'Post not found' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Rate a post (1 to 5 stars)
+exports.ratePost = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { score } = req.body;
+    const userId = req.user.id;
+
+    const numericScore = Math.min(5, Math.max(1, parseInt(score) || 5));
+
+    try {
+      const post = await Post.findById(id);
+      if (post) {
+        if (!post.ratings) post.ratings = [];
+        const existingRatingIndex = post.ratings.findIndex(r => r.user && r.user.toString() === userId);
+
+        if (existingRatingIndex > -1) {
+          post.ratings[existingRatingIndex].score = numericScore;
+        } else {
+          post.ratings.push({ user: userId, score: numericScore });
+        }
+
+        const totalScore = post.ratings.reduce((sum, r) => sum + r.score, 0);
+        post.ratingCount = post.ratings.length;
+        post.ratingAverage = parseFloat((totalScore / post.ratings.length).toFixed(1));
+
+        await post.save();
+        return res.json({
+          message: 'Rating submitted successfully',
+          ratingAverage: post.ratingAverage,
+          ratingCount: post.ratingCount,
+          userScore: numericScore,
+        });
+      }
+    } catch (dbErr) {}
+
+    // Mock store fallback
+    const post = mockPosts.find(p => p._id === id || p.id === id);
+    if (post) {
+      if (!post.ratings) post.ratings = [];
+      const idx = post.ratings.findIndex(r => r.user === userId);
+      if (idx > -1) {
+        post.ratings[idx].score = numericScore;
+      } else {
+        post.ratings.push({ user: userId, score: numericScore });
+      }
+      const totalScore = post.ratings.reduce((sum, r) => sum + r.score, 0);
+      post.ratingCount = post.ratings.length;
+      post.ratingAverage = parseFloat((totalScore / post.ratings.length).toFixed(1));
+
+      return res.json({
+        message: 'Rating submitted successfully',
+        ratingAverage: post.ratingAverage,
+        ratingCount: post.ratingCount,
+        userScore: numericScore,
+      });
     }
 
     res.status(404).json({ message: 'Post not found' });

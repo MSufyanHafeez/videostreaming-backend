@@ -37,8 +37,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'creator', 'admin'],
-      default: 'user',
+      enum: ['consumer', 'creator', 'admin', 'user'],
+      default: 'consumer',
     },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],

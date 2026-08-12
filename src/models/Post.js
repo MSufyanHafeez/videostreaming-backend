@@ -31,6 +31,20 @@ const postSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    ratings: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        score: { type: Number, min: 1, max: 5, required: true },
+      },
+    ],
+    ratingAverage: {
+      type: Number,
+      default: 0,
+    },
+    ratingCount: {
+      type: Number,
+      default: 0,
+    },
     tags: [{ type: String, trim: true }],
   },
   { timestamps: true }

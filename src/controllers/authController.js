@@ -30,7 +30,8 @@ const mockUsers = [
 
 exports.register = async (req, res) => {
   try {
-    const { username, email, password, name } = req.body;
+    const { username, email, password, name, role } = req.body;
+    const userRole = role === 'creator' ? 'creator' : 'consumer';
 
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'Username, email, and password are required' });
@@ -51,6 +52,7 @@ exports.register = async (req, res) => {
         email,
         password: hashedPassword,
         name: name || username,
+        role: userRole,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
       });
 
@@ -82,11 +84,11 @@ exports.register = async (req, res) => {
         _id: `mock-user-${Date.now()}`,
         username,
         email,
-        passwordHash: hashedPassword,
         name: name || username,
+        passwordHash: hashedPassword,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-        bio: 'VibeStream member',
-        role: 'user',
+        bio: userRole === 'creator' ? '🎬 Visual Creator' : '👁️ VibeStream Consumer',
+        role: userRole,
         followers: [],
         following: [],
       };
@@ -94,7 +96,7 @@ exports.register = async (req, res) => {
 
       const token = generateToken(newMockUser);
       return res.status(201).json({
-        message: 'Registration successful (offline mode)',
+        message: 'Registration successful',
         token,
         user: {
           id: newMockUser.id,

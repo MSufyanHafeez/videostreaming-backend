@@ -6,5 +6,6 @@ const { protect } = require('../middleware/authMiddleware');
 router.get('/search', userController.searchUsers);
 router.get('/profile/:identifier', userController.getUserProfile);
 router.post('/:id/follow', protect, userController.toggleFollowUser);
+router.put('/role', protect, userController.updateUserRole);
 
 module.exports = router;

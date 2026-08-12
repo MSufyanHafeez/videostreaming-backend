@@ -152,7 +152,7 @@ exports.searchUsers = async (req, res) => {
           { username: { $regex: q, $options: 'i' } },
           { name: { $regex: q, $options: 'i' } },
         ],
-      }).select('username name avatar bio followers');
+      }).select('username name avatar bio followers role');
 
       if (users && users.length > 0) {
         return res.json(users);
@@ -165,6 +165,38 @@ exports.searchUsers = async (req, res) => {
     );
 
     res.json(results);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Switch / Update Account Role (Consumer <-> Creator)
+exports.updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    const targetRole = role === 'creator' ? 'creator' : 'consumer';
+
+    try {
+      const user = await User.findById(req.user.id);
+      if (user) {
+        user.role = targetRole;
+        await user.save();
+        return res.json({
+          message: `Account role updated to ${targetRole}`,
+          role: user.role,
+        });
+      }
+    } catch (dbErr) {}
+
+    const mock = mockUsers.find(u => u.id === req.user.id || u._id === req.user.id);
+    if (mock) {
+      mock.role = targetRole;
+    }
+
+    return res.json({
+      message: `Account role updated to ${targetRole}`,
+      role: targetRole,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
